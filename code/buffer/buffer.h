@@ -19,41 +19,30 @@
 #include <atomic> //提供了原子操作的支持，例如 std::atomic。
 #include <assert.h> //提供了一个宏 assert，用于在程序中插入调试断言。
 
+class Buffer
+{
+    public:
+        Buffer(int initbuffsize = 1024);
+        ~Buffer() = default;
 
-class Buffer {
-public:
-    Buffer(int initBuffSize = 1024);
-    ~Buffer();
+        size_t WritableChar() const;
+        size_t ReadableChar() const;
 
-    size_t WritableBytes() const; //返回buffer中可写入的字节数
-    size_t ReadableBytes() const; //返回buffer中可读入的字节数
-    size_t PrependableBytes() const; //返回buffer中预备的字节数(指缓冲区头部的空闲空间)
+        size_t HasReadChar() const;
 
+        char* WritePosAddr() const;
+        char* ReadPosAddr() const;
 
-    const char* Peek() const; //返回缓冲区中可读数据的起始地址
-    void EnsureWriteable(size_t len); //确保缓冲区有足够的空间写下len个字节
-    void HasWritten(size_t len); //已经写入len个字节
-    void Retrieve(size_t len); //读出len个字节,如果len大于可读的字节数,则报错
-    void RetrieveUntil(const char* end); //取回直到end的字节
-    void RetrieveAll(); //取回所有字节
-    std::string RetrieveAllToStr(); //取回所有字节并返回字符串
-    const char* BeginWriteConst() const; //返回可写数据的起始地址
-    char* BeginWrite(); //返回可写数据的起始地址
-    void Append(const std::string& str); //追加字符串
-    void Append(const char* /*restrict*/ data, size_t len); //追加数据
-    void Append(const void* /*restrict*/ data, size_t len); //追加数据
-    void Append(const Buffer& buff); //追加buffer
-    ssize_t ReadFd(int fd, int* saveErrno); //从fd中读取数据
-    ssize_t WriteFd(int fd, int* saveErrno); //向fd中写入数据
+        ssize_t ReadFd(int fd, int* Errno);
+        ssize_t WriteFd(int fd, int* Errno);
 
-private:
-    char* BeginPtr_(); //返回缓冲区的起始地址
-    const char* BeginPtr_() const; //返回缓冲区的起始地址
-    void MakeSpace_(size_t len); //确保缓冲区有足够的空间写下len个字节
+        void ResetBuffer(size_t len); //如果buffer写不下从fd中读取的chat,则追加extrabuff
 
-    std::vector<char> buffer_; //缓冲区
-    std::atomic<std::size_t> readPos_; //读位置
-    std::atomic<std::size_t> writePos_; //写位置
+    private:
+        std::vector<char> buffer_;
+        std::atomic<std::size_t> readpos_;
+        std::atomic<std::size_t> writepos_;
 };
+
 
 #endif // __BUFFER_H__
