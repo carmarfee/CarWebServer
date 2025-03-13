@@ -36,7 +36,7 @@ class Buffer
         ssize_t ReadFd(int fd, int* Errno);
         ssize_t WriteFd(int fd, int* Errno);
 
-        void ResetBuffer(size_t len); //如果buffer写不下从fd中读取的chat,则追加extrabuff
+        void ResetBuffer(size_t len); //如果buffer写不下从fd中读取的char,则追加extrabuff
 
     private:
         std::vector<char> buffer_;

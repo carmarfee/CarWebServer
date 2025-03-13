@@ -1,6 +1,9 @@
 {
     "files.associations": {
         "unordered_map": "cpp",
-        "condition_variable": "cpp"
+        "condition_variable": "cpp",
+        "mutex": "cpp",
+        "deque": "cpp",
+        "cstring": "cpp"
     }
 }
