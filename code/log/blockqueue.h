@@ -25,7 +25,8 @@ public:
     bool push(const T &item);
     bool pop(T &item, int timeout = 0);
     void close();
-
+    void flush();
+    bool empty();
 private:
     // members
     std::deque<T> queue_;

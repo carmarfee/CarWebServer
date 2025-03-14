@@ -55,11 +55,11 @@ bool blockqueue<T>::pop(T &item, int timeout)
     std::unique_lock<std::mutex> lock(mutex_);
     while (queue_.empty())
     {
-        if(isclosed_)
+        if (condconsumer_.wait_for(lock, std::chrono::seconds(timeout)) == std::cv_status::timeout)
         {
             return false;
         }
-        if(condconsumer_.wait_for(lock, std::chrono::seconds(timeout)) == std::cv_status::timeout)
+        if (isclosed_)
         {
             return false;
         }
@@ -68,4 +68,17 @@ bool blockqueue<T>::pop(T &item, int timeout)
     queue_.pop_front();
     condproducer_.notify_one();
     return true;
+}
+
+template <class T>
+void blockqueue<T>::flush()
+{
+    condconsumer_.notify_one();
+}
+
+template <class T>
+bool blockqueue<T>::empty()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    return queue_.empty();
 }

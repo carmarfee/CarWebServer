@@ -28,20 +28,30 @@ class Buffer
         size_t WritableChar() const;
         size_t ReadableChar() const;
 
-        size_t HasReadChar() const;
+        void  HasWritten(size_t len);
 
         char* WritePosAddr() const;
         char* ReadPosAddr() const;
 
+        void EnsureWriteable(size_t len);
+
         ssize_t ReadFd(int fd, int* Errno);
         ssize_t WriteFd(int fd, int* Errno);
+
+        void Append(const char* str, size_t len);
+        void Append(const void* data, size_t len);
+        void Append(const std::string& str);
+        void Append(const Buffer& buff);
+
+        void RetrieveAll();
+        std::string RetrieveAllToStr();
 
         void ResetBuffer(size_t len); //如果buffer写不下从fd中读取的char,则追加extrabuff
 
     private:
         std::vector<char> buffer_;
-        std::atomic<std::size_t> readpos_;
-        std::atomic<std::size_t> writepos_;
+        std::atomic<std::size_t> readPos_;
+        std::atomic<std::size_t> writePos_;
 };
 
 

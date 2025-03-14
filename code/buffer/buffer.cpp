@@ -21,9 +21,9 @@ size_t Buffer::WritableChar() const
     return buffer_.size() - writePos_;
 }
 
-size_t Buffer::HasReadChar() const
+void Buffer::HasWritten(size_t len)
 {
-    return readPos_;
+    writePos_ += len;
 }
 
 void Buffer::ResetBuffer(size_t len)
@@ -31,13 +31,12 @@ void Buffer::ResetBuffer(size_t len)
     if (WritableChar() + HasReadChar() < len)
     {
         buffer_.resize(writePos_ + len + 1);
-        writepos_ += n;
     }
     else
     {
         std::copy(buffer_.begin() + readPos_, buffer_.begin() + writePos_, buffer_.begin());
         readPos_ = 0;
-        writePos_ = ReadableChar() + n;
+        writePos_ = ReadableChar();
     }
 }
 
@@ -88,4 +87,44 @@ ssize_t Buffer::WriteFd(int fd, int *Errno)
     }
     readPos_ += n;
     return n;
+}
+
+void Buffer::Append(const std::string& str) {
+    Append(str.data(), str.length());
+}
+
+void Buffer::Append(const void* data, size_t len) {
+    assert(data);
+    Append(static_cast<const char*>(data), len);
+}
+
+void Buffer::Append(const char* str, size_t len) {
+    assert(str);
+    EnsureWriteable(len);
+    std::copy(str, str + len, BeginWrite());
+    HasWritten(len);
+}
+
+void Buffer::Append(const Buffer& buff) {
+    Append(buff.Peek(), buff.ReadableBytes());
+}
+
+
+void Buffer::EnsureWriteable(size_t len) {
+    if(WritableBytes() < len) {
+        ResetBuffer(len);
+    }
+    assert(WritableBytes() >= len);
+}
+
+void Buffer::RetrieveAll() {
+    bzero(&buffer_[0], buffer_.size());
+    readPos_ = 0;
+    writePos_ = 0;
+}
+
+std::string Buffer::RetrieveAllToStr() {
+    std::string str(ReadPosAddr(), ReadableBytes());
+    RetrieveAll();
+    return str;
 }
