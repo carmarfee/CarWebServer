@@ -40,6 +40,7 @@ public:
 private:
     void InitEventMode_();
     bool InitSocket_();
+    void AddClient_(int fd, sockaddr_in addr);
 
     const char *ip_;
     int port_;
