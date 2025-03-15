@@ -9,7 +9,7 @@
  *
  */
 
-#include "sqlconnpool.h"
+#include "../../inc/sqlconnpool.h"
 
 using namespace std;
 

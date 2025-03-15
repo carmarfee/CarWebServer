@@ -9,7 +9,7 @@
  *
  */
 
-#include "log.h"
+#include "../../inc/log.h"
 
 using namespace std;
 

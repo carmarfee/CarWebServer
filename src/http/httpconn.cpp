@@ -9,7 +9,7 @@
  * 
  */
 
-#include "httpconn.h"
+#include "../../inc/httpconn.h"
 using namespace std;
 
 HttpConn::HttpConn()
@@ -109,7 +109,7 @@ ssize_t HttpConn::write(int *saveErrno)
 bool HttpConn::process()
 {
     request_.Init();
-    if (readBuff_.ReadableBytes() <= 0)
+    if (readBuff_.ReadableChar() <= 0)
     {
         return false;
     }
@@ -124,8 +124,8 @@ bool HttpConn::process()
     }
 
     response_.MakeResponse(writeBuff_);
-    iov_[0].iov_base = const_cast<char *>(writeBuff_.Peek());
-    iov_[0].iov_len = writeBuff_.ReadableBytes();
+    iov_[0].iov_base = const_cast<char *>(writeBuff_.ReadPosAddr());
+    iov_[0].iov_len = writeBuff_.ReadableChar();
     iovCnt_ = 1;
 
     if (response_.FileLen() > 0 && response_.File())

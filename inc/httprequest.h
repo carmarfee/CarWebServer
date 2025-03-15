@@ -18,15 +18,15 @@
 #include <errno.h>
 #include <mysql/mysql.h> //mysql
 
-#include "../buffer/buffer.h"
-#include "../log/log.h"
-#include "../pool/sqlconnpool.h"
-#include "../pool/sqlconn.h"
+#include "buffer.h"
+#include "log.h"
+#include "sqlconnpool.h"
+#include "sqlconn.h"
 
 class HttpRequest
 {
 public:
-    HttpRequest() { init(); }
+    HttpRequest() { Init(); }
     ~HttpRequest() = default;
 
     enum PARSE_STATE
@@ -82,3 +82,5 @@ private:
     static const std::unordered_map<std::string, int> DEFAULT_HTML_TAG;
     static int ConverHex(char ch);
 };
+
+#endif // HttpRequest_H

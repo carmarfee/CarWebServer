@@ -8,7 +8,7 @@
  * @copyright Copyright (c) 2025
  *
  */
-#include "buffer.h"
+#include "../../inc/buffer.h"
 
 Buffer::Buffer(int initbuffSize) : buffer_(initbuffSize), readPos_(0), writePos_(0) {}
 
@@ -46,6 +46,11 @@ void Buffer::ResetBuffer(size_t len)
 }
 
 char *Buffer::WritePosAddr()
+{
+    return BeginPtr_() + writePos_;
+}
+
+const char *Buffer::WritePosAddrConst() const
 {
     return BeginPtr_() + writePos_;
 }
@@ -127,6 +132,18 @@ void Buffer::EnsureWriteable(size_t len)
     assert(WritableChar() >= len);
 }
 
+void Buffer::Retrieve(size_t len)
+{
+    assert(ReadableChar() >= len);
+    readPos_ += len;
+}
+
+void Buffer::RetrieveUntil(const char *end)
+{
+    assert(ReadPosAddr() <= end);
+    Retrieve(end - ReadPosAddr());
+}
+
 void Buffer::RetrieveAll()
 {
     bzero(&buffer_[0], buffer_.size());
@@ -146,6 +163,7 @@ char *Buffer::BeginPtr_()
     return &*buffer_.begin();
 }
 
-const char* Buffer::BeginPtr_() const {
+const char *Buffer::BeginPtr_() const
+{
     return &*buffer_.begin();
 }

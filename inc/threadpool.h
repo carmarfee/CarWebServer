@@ -18,12 +18,12 @@
 #include <thread>
 #include <functional>
 
-template <class F>
 class threadpool
 {
 public:
     explicit threadpool(size_t threadcount = 8);
     ~threadpool();
+    template <class F>
     void AddTask(F &&task);
 
 private:
@@ -33,13 +33,12 @@ private:
         std::mutex mtx;
         std::condition_variable cv;
         bool isclose;
-        std::queue<F> tasks;
+        std::queue<std::function<void()>> tasks;
     };
     std::shared_ptr<Pool> pool_;
 };
 
-template <class F>
-threadpool<F>::threadpool(size_t threadcount) : pool_(std::make_shared<Pool>())
+threadpool::threadpool(size_t threadcount) : pool_(std::make_shared<Pool>())
 {
     for (size_t i = 0; i < threadcount; i++)
     {
@@ -69,10 +68,9 @@ threadpool<F>::threadpool(size_t threadcount) : pool_(std::make_shared<Pool>())
     }
 }
 
-template <class F>
-threadpool<F>::~threadpool()
+threadpool::~threadpool()
 {
-    if (static_cast<bool> pool_)
+    if (static_cast<bool>(pool_))
     {
         {
             std::lock_guard<std::mutex> locker(pool_->mtx);
@@ -83,7 +81,7 @@ threadpool<F>::~threadpool()
 }
 
 template <class F>
-void threadpool<F>::AddTask(F &&task)
+void threadpool::AddTask(F &&task)
 {
     {
         std::lock_guard<std::mutex> locker(pool_->mtx);

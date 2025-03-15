@@ -20,7 +20,7 @@
 #include <functional>
 #include <assert.h>
 #include <chrono>
-#include "../log/log.h"
+#include "log.h"
 
 typedef std::function<void()> TimeoutCallBack;
 typedef std::chrono::high_resolution_clock Clock;
@@ -46,9 +46,11 @@ public:
     ~heaptimer();
 
     void add(int id, int timeout, const TimeoutCallBack &cb);
+    void adjust(int id, int timeout);
     void pop();
     void tick();
 
+    int GetNextTick();
 private:
     // members
     void del_(size_t index);

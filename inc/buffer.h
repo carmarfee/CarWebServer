@@ -32,6 +32,7 @@ public:
     size_t HasRead() const;
 
     char *WritePosAddr();
+    const char *WritePosAddrConst() const;
     const char *ReadPosAddr() const;
 
     void EnsureWriteable(size_t len);
@@ -43,6 +44,9 @@ public:
     void Append(const void *data, size_t len);
     void Append(const std::string &str);
     void Append(const Buffer &buff);
+
+    void Retrieve(size_t len);
+    void RetrieveUntil(const char* end);
 
     void RetrieveAll();
     std::string RetrieveAllToStr();

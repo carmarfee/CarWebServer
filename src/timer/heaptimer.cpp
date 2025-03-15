@@ -9,18 +9,14 @@
  * 
  */
 
-#include "heaptimer.h"
+#include "../../inc/heaptimer.h"
 
-
-heaptimer::heaptimer(/* args */)
-{
-}
 
 heaptimer::~heaptimer()
 {
 }
 
-void HeapTimer::add(int id, int timeout, const TimeoutCallBack& cb) {
+void heaptimer::add(int id, int timeout, const TimeoutCallBack& cb) {
     assert(id >= 0);
     size_t i;
     if(pos_.count(id) == 0) {
@@ -41,7 +37,7 @@ void HeapTimer::add(int id, int timeout, const TimeoutCallBack& cb) {
     }
 }
 
-bool HeapTimer::siftdown_(size_t index, size_t n) {
+bool heaptimer::siftdown_(size_t index, size_t n) {
     assert(index >= 0 && index < heap_.size());
     assert(n >= 0 && n <= heap_.size());
     size_t i = index;
@@ -56,7 +52,7 @@ bool HeapTimer::siftdown_(size_t index, size_t n) {
     return i > index;
 }
 
-void HeapTimer::siftup_(size_t i) {
+void heaptimer::siftup_(size_t i) {
     assert(i >= 0 && i < heap_.size());
     size_t j = (i - 1) / 2;
     while(j >= 0) {
@@ -67,7 +63,7 @@ void HeapTimer::siftup_(size_t i) {
     }
 }
 
-void HeapTimer::del_(size_t index) {
+void heaptimer::del_(size_t index) {
     /* 删除指定位置的结点 */
     assert(!heap_.empty() && index >= 0 && index < heap_.size());
     /* 将要删除的结点换到队尾，然后调整堆 */
@@ -85,7 +81,7 @@ void HeapTimer::del_(size_t index) {
     heap_.pop_back();
 }
 
-void HeapTimer::tick() {
+void heaptimer::tick() {
     /* 清除超时结点 */
     if(heap_.empty()) {
         return;
@@ -100,7 +96,24 @@ void HeapTimer::tick() {
     }
 }
 
-void HeapTimer::pop() {
+int heaptimer::GetNextTick() {
+    tick();
+    size_t res = -1;
+    if(!heap_.empty()) {
+        res = std::chrono::duration_cast<ms>(heap_.front().expires - Clock::now()).count();
+        if(res < 0) { res = 0; }
+    }
+    return res;
+}
+
+void heaptimer::pop() {
     assert(!heap_.empty());
     del_(0);
+}
+
+void heaptimer::adjust(int id, int timeout) {
+    /* 调整指定id的结点 */
+    assert(!heap_.empty() && ref_.count(id) > 0);
+    heap_[ref_[id]].expires = Clock::now() + MS(timeout);;
+    siftdown_(ref_[id], heap_.size());
 }

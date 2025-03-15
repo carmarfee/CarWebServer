@@ -18,8 +18,8 @@
 #include <stdlib.h>    // atoi()
 #include <errno.h>
 
-#include "../log/log.h"
-#include "../pool/sqlconn.h"
+#include "log.h"
+#include "sqlconn.h"
 #include "httprequest.h"
 #include "httpresponse.h"
 
