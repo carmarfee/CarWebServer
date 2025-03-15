@@ -4,6 +4,17 @@
         "condition_variable": "cpp",
         "mutex": "cpp",
         "deque": "cpp",
-        "cstring": "cpp"
+        "cstring": "cpp",
+        "*.tcc": "cpp",
+        "istream": "cpp",
+        "numeric": "cpp",
+        "ostream": "cpp",
+        "sstream": "cpp",
+        "array": "cpp",
+        "string_view": "cpp",
+        "initializer_list": "cpp",
+        "span": "cpp",
+        "queue": "cpp",
+        "format": "cpp"
     }
 }

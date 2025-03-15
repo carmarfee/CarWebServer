@@ -1,15 +1,45 @@
 /**
- * @file blockqueue.cpp
+ * @file blockqueue.h
  * @author carmarfee (3073640166@qq.com)
  * @brief
  * @version 0.1
- * @date 2025-03-13
+ * @date 2025-03-11
  *
  * @copyright Copyright (c) 2025
  *
  */
 
-#include "blockqueue.h"
+#ifndef BLOCKQUEUE_H
+#define BLOCKQUEUE_H
+
+#include <mutex>
+#include <deque>
+#include <condition_variable>
+#include <sys/time.h>
+
+template <typename T>
+class blockqueue
+{
+public:
+    explicit blockqueue(size_t maxcapacity = 1000);
+    ~blockqueue();
+    bool push(const T &item);
+    bool pop(T &item);
+    bool pop(T &item, int timeout);
+    void close();
+    void flush();
+    bool empty();
+    bool full();
+
+private:
+    // members
+    std::deque<T> queue_;
+    size_t capacity_;
+    std::mutex mutex_;
+    std::condition_variable condconsumer_;
+    std::condition_variable condproducer_;
+    bool isclosed_;
+};
 
 template <class T>
 blockqueue<T>::blockqueue(size_t maxcapacity) : capacity_(maxcapacity), isclosed_(false) {}
@@ -50,6 +80,24 @@ bool blockqueue<T>::push(const T &item)
 }
 
 template <class T>
+bool blockqueue<T>::pop(T &item)
+{
+    std::unique_lock<std::mutex> lock(mutex_);
+    while (queue_.empty())
+    {
+        condconsumer_.wait(lock);
+        if (isclosed_)
+        {
+            return false;
+        }
+    }
+    item = queue_.front();
+    queue_.pop_front();
+    condproducer_.notify_one();
+    return true;
+}
+
+template <class T>
 bool blockqueue<T>::pop(T &item, int timeout)
 {
     std::unique_lock<std::mutex> lock(mutex_);
@@ -82,3 +130,12 @@ bool blockqueue<T>::empty()
     std::lock_guard<std::mutex> lock(mutex_);
     return queue_.empty();
 }
+
+template <class T>
+bool blockqueue<T>::full()
+{
+    std::lock_guard<std::mutex> locker(mutex_);
+    return queue_.size() >= capacity_;
+}
+
+#endif // BLOCKQUEUE_H
