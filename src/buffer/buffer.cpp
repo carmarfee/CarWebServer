@@ -130,7 +130,6 @@ void Buffer::EnsureWriteable(size_t len)
     {
         ResetBuffer(len);
     }
-    assert(WritableChar() >= len);
 }
 
 void Buffer::Retrieve(size_t len)

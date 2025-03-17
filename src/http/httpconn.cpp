@@ -95,7 +95,7 @@ bool HttpRequest::ParseRequestMsg(Buffer &buff)
     return true;
 }
 
-void HttpResponse::AddResponseLine_()
+void HttpResponse::AddResponseLine_(Buffer &buff)
 {
     string status;
     if (code_des.count(code_) == 1)
@@ -108,11 +108,11 @@ void HttpResponse::AddResponseLine_()
         status = code_des.find(code_)->second;
     }
     responsemsg_.response_line = "HTTP/1.1 " + to_string(code_) + " " + status + "\r\n";
+    buff.Append(responsemsg_.response_line);
 }
 
-void HttpResponse::AddResponseHeader_()
+void HttpResponse::AddResponseHeader_(Buffer &buff)
 {
-    responsemsg_.response_header.push_back("Server: carmarfee\r\n");
     responsemsg_.response_header.push_back("Content-Type: text/html\r\n");
     if (isKeepAlive_)
     {
@@ -125,9 +125,15 @@ void HttpResponse::AddResponseHeader_()
     }
     std::string filetype = Utils::GetFileType(path_);
     responsemsg_.response_header.push_back("Content-type: " + filetype + "\r\n");
+
+    buff.Append("Content-Type: text/html\r\n");
+    buff.Append("Connection: keep-alive\r\n");
+    buff.Append("Keep-Alive: max=6, timeout=120\r\n");
+    buff.Append("Connection: close\r\n");
+    buff.Append("Content-type: " + filetype + "\r\n");
 }
 
-void HttpResponse::AddResponseBody_()
+void HttpResponse::AddResponseBody_(Buffer &buff)
 {
     int srcFd = open(path_.c_str(), O_RDONLY);
     if (srcFd < 0)
@@ -135,6 +141,7 @@ void HttpResponse::AddResponseBody_()
         LOG_ERROR("Open file error");
         code_ = 404;
         ErrorContent("Open file error");
+        buff.Append(responsemsg_.response_header.back());
         return;
     }
     LOG_DEBUG("file:%s to memory", (srcDir_ + path_).data());
@@ -144,12 +151,14 @@ void HttpResponse::AddResponseBody_()
         LOG_ERROR("mmap error");
         code_ = 404;
         ErrorContent("mmap error");
+        buff.Append(responsemsg_.response_header.back());
         return;
     }
     file_content_ = (char *)mmapRet;
     responsemsg_.response_body = file_content_;
     close(srcFd);
     responsemsg_.response_header.push_back("Content-Length: " + to_string(file_stat_.st_size) + "\r\n\r\n");
+    buff.Append("Content-Length: " + to_string(file_stat_.st_size) + "\r\n\r\n");
 }
 
 void HttpResponse::MakeResponseMsg(Buffer &buff)
@@ -171,9 +180,9 @@ void HttpResponse::MakeResponseMsg(Buffer &buff)
         path_ = code_path.find(code_)->second;
         stat((srcDir_ + path_).data(), &file_stat_);
     }
-    AddResponseLine_();
-    AddResponseHeader_();
-    AddResponseBody_();
+    AddResponseLine_(buff);
+    AddResponseHeader_(buff);
+    AddResponseBody_(buff);
 }
 
 void HttpResponse::ErrorContent(string message)
@@ -196,7 +205,6 @@ void HttpResponse::ErrorContent(string message)
 
     responsemsg_.response_header.push_back("Content-Length: " + to_string(body.size()) + "\r\n\r\n");
     responsemsg_.response_body = body;
-    ;
 }
 
 void HttpResponse::Close()
@@ -297,12 +305,21 @@ bool HttpConn::Process()
     iov_[0].iov_len = writeBuff_.ReadableBytes();
     iovCnt_ = 1;
 
-    /* 文件 */
-    if (response_.GetContentLength() > 0 && response_.GetContent())
+    /* 响应体 */
+    if (response_.GetContent())
     {
-        iov_[1].iov_base = response_.GetContent();
-        iov_[1].iov_len = response_.GetContentLength();
-        iovCnt_ = 2;
+        if (response_.GetContentLength(1) > 0)
+        {
+            iov_[1].iov_base = response_.GetContent(1);
+            iov_[1].iov_len = response_.GetContentLength(1);
+            iovCnt_ = 2;
+        }
+        else if (response_.GetContentLength(0) > 0)
+        {
+            iov_[1].iov_base = response_.GetContent(0);
+            iov_[1].iov_len = response_.GetContentLength(0);
+            iovCnt_ = 2;
+        }
     }
     return true;
 }

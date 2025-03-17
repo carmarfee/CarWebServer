@@ -32,28 +32,40 @@ WebServer::WebServer(
     isClose_ = false;
     if (openlog)
     {
-        Log::GetInstance()->init(loglevel, "./log", ".log", logQueSize);
+        Log::GetInstance()->init(loglevel, "/log", ".log", logQueSize);
         if (isClose_)
         {
-            LOG_ERROR("========== Server init error!==========");
+            LOG_ERROR("============== Server Init Error! ==============");
         }
         else
         {
-            LOG_INFO("========== Server init ==========");
-            LOG_INFO("Port:%d, OpenLinger: %s", port_, openlinger_ ? "true" : "false");
-            LOG_INFO("Listen Mode: %s, OpenConn Mode: %s",
-                     (listenEvent_ & EPOLLET ? "ET" : "LT"),
-                     (connEvent_ & EPOLLET ? "ET" : "LT"));
-            LOG_INFO("LogSys level: %d", loglevel);
-            LOG_INFO("srcDir: %s", HttpConn::srcDir);
-            LOG_INFO("SqlConnPool num: %d, ThreadPool num: %d", connPoolNum, threadNum);
+            LOG_INFO("============== Server Init Success! ==============");
+            LOG_INFO("          welcome to carmarfee's server           ");
+            LOG_INFO("                                     / _|         ");
+            LOG_INFO("  ___ __ _ _ __ _ __ ___   __ _ _ __| |_ ___  ___ ");
+            LOG_INFO(" / __/ _` | '__| '_ ` _ \\ / _` | '__|  _/ _ \\/ _ \\");
+            LOG_INFO("| (_| (_| | |  | | | | | | (_| | |  | ||  __/  __/");
+            LOG_INFO(" \\___\\__,_|_|  |_| |_| |_|\\__,_|_|  |_| \\___|\\___|");
+            LOG_INFO("--------------------------------------------------");
+            LOG_INFO("                 the server config                ")
+            LOG_INFO("--------------------------------------------------");
+            LOG_INFO("IP: %s", ip_);
+            LOG_INFO("Port: %d", port_);
+            LOG_INFO("Listen Mode: %s", (listenEvent_ & EPOLLET ? "ET" : "LT"));
+            LOG_INFO("Connect Mode: %s", (connEvent_ & EPOLLET ? "ET" : "LT"));
+            LOG_INFO("SysLogLevel: %d", loglevel);
+            LOG_INFO("SqlConnPool num: %d", connPoolNum);
+            LOG_INFO("ThreadPool num: %d", threadNum);
         }
     }
 }
 
 WebServer::~WebServer()
 {
-    cout << "WebServer destructed" << endl;
+    close(listenFd_);
+    isClose_ = true;
+    free(srcDir_);
+    SqlConnPool::GetInstance()->close();
 }
 
 void WebServer::Start()
@@ -61,7 +73,7 @@ void WebServer::Start()
     int timeMS = -1; /* epoll wait timeout == -1 无事件将阻塞 */
     if (!isClose_)
     {
-        LOG_INFO("========== Server start ==========");
+        LOG_INFO("============== Server Start Success!==============");
     }
     while (!isClose_)
     {
@@ -211,7 +223,7 @@ int WebServer::SetFdNonblock_(int fd)
     return fcntl(fd, F_SETFL, flags);
 }
 
-//1.将连接到的用户添加到epoll中,用于监听是否有数据传递  2.将该连接事件(连接的socketFD)添加到timer定时器中,并定时为timeMS.如果没有数据写入则断开连接(短连接),否则有写事件发生就延迟该连接事件(fd)
+// 1.将连接到的用户添加到epoll中,用于监听是否有数据传递  2.将该连接事件(连接的socketFD)添加到timer定时器中,并定时为timeMS.如果没有数据写入则断开连接(短连接),否则有写事件发生就延迟该连接事件(fd)
 void WebServer::AddClient_(int fd, sockaddr_in addr)
 {
     assert(fd > 0);
@@ -222,7 +234,6 @@ void WebServer::AddClient_(int fd, sockaddr_in addr)
     }
     epoller_->AddFd(fd, EPOLLIN | connEvent_);
     SetFdNonblock_(fd);
-    LOG_INFO("Client[%d] in!", users_[fd].GetFd());
 }
 
 void WebServer::SendError_(int fd, const char *info)

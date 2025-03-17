@@ -143,13 +143,19 @@ public:
     void Close();
     void ErrorContent(std::string message);
 
-    char *GetContent() const { return file_content_; }
-    size_t GetContentLength() const { return file_stat_.st_size; }
+    char *GetContent(int cfrom = 0) const
+    {
+        return cfrom ? file_content_ : const_cast<char *>(responsemsg_.response_body.c_str()); // file_content只来自file,而请求体的内容可以是自己写的plain也可以是来自file
+    }
+    size_t GetContentLength(int lfrom) const
+    {
+        return lfrom ? file_stat_.st_size : responsemsg_.response_body.size();
+    }
 
 private:
-    void AddResponseLine_();
-    void AddResponseHeader_();
-    void AddResponseBody_();
+    void AddResponseLine_(Buffer &buff);
+    void AddResponseHeader_(Buffer &buff);
+    void AddResponseBody_(Buffer &buff);
 
 private:
     ResponseMsg responsemsg_; // 生成的响应报文

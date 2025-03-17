@@ -99,7 +99,10 @@ void Log::init(int level, const char *path, const char *suffix, int maxQueueSize
     time_t timer = time(nullptr);
     struct tm *sysTime = localtime(&timer);
     struct tm t = *sysTime;
-    path_ = path;
+
+    char *logpath = getcwd(nullptr, 256);
+    strncat(logpath, path, 10);
+    path_ = logpath;
     suffix_ = suffix;
     char fileName[LOG_NAME_LEN] = {0};
     snprintf(fileName, LOG_NAME_LEN - 1, "%s/%04d_%02d_%02d%s",
