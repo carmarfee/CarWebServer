@@ -1,0 +1,54 @@
+2025-03-17 21:16:37.386525 [info] : ========== Server init ==========
+2025-03-17 21:16:37.386542 [info] : Port:1316, OpenLinger: false
+2025-03-17 21:16:37.386546 [info] : Listen Mode: ET, OpenConn Mode: ET
+2025-03-17 21:16:37.386585 [info] : LogSys level: 1
+2025-03-17 21:16:37.386631 [info] : srcDir: /home/carmarfee/桌面/C++proj/MyWebServer/inc/res/
+2025-03-17 21:16:37.386645 [info] : SqlConnPool num: 12, ThreadPool num: 6
+2025-03-17 21:16:37.386653 [info] : ========== Server start ==========
+2025-03-17 21:16:59.609454 [info] : Client[18](127.0.0.1:16104) in, userCount:1
+2025-03-17 21:16:59.609514 [info] : Client[18] in!
+2025-03-17 21:16:59.609535 [error]: Connect failed!
+2025-03-17 21:16:59.609584 [info] : Client[19](127.0.0.1:19688) in, userCount:2
+2025-03-17 21:16:59.609605 [info] : Client[19] in!
+2025-03-17 21:16:59.609622 [error]: Connect failed!
+2025-03-17 21:18:01.327484 [info] : Client[19] quit!
+2025-03-17 21:18:01.327695 [info] : Client[19](127.0.0.1:19688) quit, UserCount:1
+2025-03-17 21:18:01.327741 [info] : Client[18] quit!
+2025-03-17 21:33:17.665858 [info] : ========== Server init ==========
+2025-03-17 21:33:17.665874 [info] : Port:1316, OpenLinger: false
+2025-03-17 21:33:17.665877 [info] : Listen Mode: ET, OpenConn Mode: ET
+2025-03-17 21:33:17.665940 [info] : LogSys level: 1
+2025-03-17 21:33:17.665983 [info] : srcDir: /home/carmarfee/桌面/C++proj/MyWebServer/inc/res/
+2025-03-17 21:33:17.666008 [info] : SqlConnPool num: 12, ThreadPool num: 6
+2025-03-17 21:33:17.666022 [info] : ========== Server start ==========
+2025-03-17 21:33:19.700387 [info] : Client[18](127.0.0.1:15516) in, userCount:1
+2025-03-17 21:33:19.700465 [info] : Client[18] in!
+2025-03-17 21:33:19.700497 [error]: Connect failed!
+2025-03-17 21:33:19.700643 [info] : Client[19](127.0.0.1:19100) in, userCount:2
+2025-03-17 21:33:51.665291 [info] : ========== Server init ==========
+2025-03-17 21:33:51.665305 [info] : Port:1316, OpenLinger: false
+2025-03-17 21:33:51.665337 [info] : Listen Mode: ET, OpenConn Mode: ET
+2025-03-17 21:33:51.665370 [info] : LogSys level: 1
+2025-03-17 21:33:51.665378 [info] : srcDir: /home/carmarfee/桌面/C++proj/MyWebServer/inc/res/
+2025-03-17 21:33:51.665384 [info] : SqlConnPool num: 12, ThreadPool num: 6
+2025-03-17 21:33:51.665391 [info] : ========== Server start ==========
+2025-03-17 21:33:55.586287 [info] : Client[18](127.0.0.1:43230) in, userCount:1
+2025-03-17 21:33:55.586393 [info] : Client[18] in!
+2025-03-17 21:33:55.586445 [error]: Connect failed!
+2025-03-17 21:33:58.822503 [info] : Client[19](127.0.0.1:44254) in, userCount:2
+2025-03-17 21:33:58.822612 [info] : Client[19] in!
+2025-03-17 21:34:13.977818 [info] : ========== Server init ==========
+2025-03-17 21:34:13.977832 [info] : Port:1316, OpenLinger: false
+2025-03-17 21:34:13.977871 [info] : Listen Mode: ET, OpenConn Mode: ET
+2025-03-17 21:34:13.977877 [info] : LogSys level: 1
+2025-03-17 21:34:13.977882 [info] : srcDir: /home/carmarfee/桌面/C++proj/MyWebServer/inc/res/
+2025-03-17 21:34:13.977886 [info] : SqlConnPool num: 12, ThreadPool num: 6
+2025-03-17 21:34:13.977889 [info] : ========== Server start ==========
+2025-03-17 21:34:14.804079 [info] : Client[18](127.0.0.1:7851) in, userCount:1
+2025-03-17 21:34:14.804164 [info] : Client[18] in!
+2025-03-17 21:34:14.804202 [error]: Connect failed!
+2025-03-17 21:34:14.804246 [info] : Client[19](127.0.0.1:8363) in, userCount:2
+2025-03-17 21:34:14.804276 [info] : Client[19] in!
+2025-03-17 21:34:14.804302 [error]: Connect failed!
+2025-03-17 21:34:21.410746 [info] : Client[20](127.0.0.1:9387) in, userCount:3
+2025-03-17 21:34:21.410858 [info] : Client[20] in!

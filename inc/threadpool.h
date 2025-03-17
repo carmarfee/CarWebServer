@@ -21,7 +21,7 @@
 class threadpool
 {
 public:
-    explicit threadpool(size_t threadcount = 8);
+    explicit threadpool(size_t threadcount = 2);
     ~threadpool();
     template <class F>
     void AddTask(F &&task);
@@ -38,7 +38,7 @@ private:
     std::shared_ptr<Pool> pool_;
 };
 
-threadpool::threadpool(size_t threadcount) : pool_(std::make_shared<Pool>())
+inline threadpool::threadpool(size_t threadcount) : pool_(std::make_shared<Pool>())
 {
     for (size_t i = 0; i < threadcount; i++)
     {
@@ -68,7 +68,7 @@ threadpool::threadpool(size_t threadcount) : pool_(std::make_shared<Pool>())
     }
 }
 
-threadpool::~threadpool()
+inline threadpool::~threadpool()
 {
     if (static_cast<bool>(pool_))
     {
@@ -81,7 +81,7 @@ threadpool::~threadpool()
 }
 
 template <class F>
-void threadpool::AddTask(F &&task)
+inline void threadpool::AddTask(F &&task)
 {
     {
         std::lock_guard<std::mutex> locker(pool_->mtx);

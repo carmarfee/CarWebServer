@@ -12,7 +12,7 @@
 
 Buffer::Buffer(int initbuffSize) : buffer_(initbuffSize), readPos_(0), writePos_(0) {}
 
-size_t Buffer::ReadableChar() const
+size_t Buffer::ReadableBytes() const
 {
     return writePos_ - readPos_;
 }
@@ -41,7 +41,7 @@ void Buffer::ResetBuffer(size_t len)
     {
         std::copy(BeginPtr_() + readPos_, BeginPtr_() + writePos_, BeginPtr_());
         readPos_ = 0;
-        writePos_ = ReadableChar();
+        writePos_ = ReadableBytes();
     }
 }
 
@@ -82,14 +82,15 @@ ssize_t Buffer::ReadFd(int fd, int *Errno)
     }
     else
     {
-        ResetBuffer(n);
+        writePos_ = buffer_.size();
+        Append(buff, n - writable);
     }
     return n;
 }
 
 ssize_t Buffer::WriteFd(int fd, int *Errno)
 {
-    size_t readable = ReadableChar();
+    size_t readable = ReadableBytes();
     ssize_t n = write(fd, ReadPosAddr(), readable);
     if (n < 0)
     {
@@ -120,7 +121,7 @@ void Buffer::Append(const char *str, size_t len)
 
 void Buffer::Append(const Buffer &buff)
 {
-    Append(buff.ReadPosAddr(), buff.ReadableChar());
+    Append(buff.ReadPosAddr(), buff.ReadableBytes());
 }
 
 void Buffer::EnsureWriteable(size_t len)
@@ -134,7 +135,7 @@ void Buffer::EnsureWriteable(size_t len)
 
 void Buffer::Retrieve(size_t len)
 {
-    assert(ReadableChar() >= len);
+    assert(ReadableBytes() >= len);
     readPos_ += len;
 }
 
@@ -153,7 +154,7 @@ void Buffer::RetrieveAll()
 
 std::string Buffer::RetrieveAllToStr()
 {
-    std::string str(ReadPosAddr(), ReadableChar());
+    std::string str(ReadPosAddr(), ReadableBytes());
     RetrieveAll();
     return str;
 }

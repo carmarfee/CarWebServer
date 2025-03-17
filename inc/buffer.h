@@ -11,6 +11,7 @@
 
 #ifndef __BUFFER_H__
 #define __BUFFER_H__
+
 #include <cstring>   //提供了处理C风格字符串的函数，例如 strcpy, strlen, strcat 等等。perror 函数也在这个头文件中，用于打印描述错误代码的字符串。
 #include <iostream>  //提供了标准输入输出流对象 cout 和 cin。
 #include <unistd.h>  //提供了 POSIX 操作系统 API 的访问功能，例如 POSIX 文件操作函数（open, read, write, close 等等）。
@@ -26,7 +27,7 @@ public:
     ~Buffer() = default;
 
     size_t WritableChar() const;
-    size_t ReadableChar() const;
+    size_t ReadableBytes() const;
 
     void HasWritten(size_t len);
     size_t HasRead() const;

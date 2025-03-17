@@ -24,41 +24,52 @@
 
 typedef std::function<void()> TimeoutCallBack;
 typedef std::chrono::high_resolution_clock Clock;
-typedef std::chrono::milliseconds ms;
-typedef Clock::time_point timepoint;
+typedef std::chrono::milliseconds MS;
+typedef Clock::time_point TimeStamp;
 
-class timer
+struct TimerNode
 {
-public:
     int id;
-    timepoint expires;
+    TimeStamp expires;
     TimeoutCallBack cb;
-    bool operator<(const timer &t)
+    bool operator<(const TimerNode &t)
     {
         return expires < t.expires;
     }
 };
-
 class heaptimer
 {
 public:
-    heaptimer() { heap_.reserve(64); };
-    ~heaptimer();
+    heaptimer() { heap_.reserve(64); }
 
-    void add(int id, int timeout, const TimeoutCallBack &cb);
-    void adjust(int id, int timeout);
+    ~heaptimer() { clear(); }
+
+    void adjust(int id, int newExpires);
+
+    void add(int id, int timeOut, const TimeoutCallBack &cb);
+
+    void doWork(int id);
+
+    void clear();
+
+    void tick(); // 心搏函数,执行堆顶节点任务
+
     void pop();
-    void tick();
 
     int GetNextTick();
-private:
-    // members
-    void del_(size_t index);
-    void siftup_(size_t i);
-    void siftdown_(size_t index, size_t n);
 
-    std::vector<timer> heap_;
-    std::unordered_map<int, size_t> pos_;
+private:
+    void del_(size_t i);
+
+    void siftup_(size_t i);
+
+    bool siftdown_(size_t index, size_t n);
+
+    void SwapNode_(size_t i, size_t j);
+
+    std::vector<TimerNode> heap_;
+
+    std::unordered_map<int, size_t> ref_; // 节点id映射容器index
 };
 
 #endif // __HEAPTIMER_H__

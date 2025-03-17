@@ -121,7 +121,6 @@ void Log::init(int level, const char *path, const char *suffix, int maxQueueSize
             mkdir(path_, 0777);
             fp_ = fopen(fileName, "a");
         }
-        assert(fp_ != nullptr);
     }
 }
 

@@ -1,80 +1,246 @@
-/**
- * @file httpconn.cpp
- * @author carmarfee (3073640166@qq.com)
- * @brief 
- * @version 0.1
- * @date 2025-03-14
- * 
- * @copyright Copyright (c) 2025
- * 
- */
-
 #include "../../inc/httpconn.h"
 using namespace std;
 
-HttpConn::HttpConn()
+bool HttpRequest::ParseRequestLine_(const string &line)
 {
-    fd_ = -1;
-    addr_ = {0};
-    isClose_ = true;
-    userCount = 0;
+    std::istringstream is(line);
+    requestmsg_.request_line = line;
+    is >> method_ >> path_ >> version_;
+    std::transform(method_.begin(), method_.end(), method_.begin(), ::toupper);
+    if (method_.empty() || path_.empty() || version_.empty())
+    {
+        LOG_ERROR("RequestLine error");
+        return false;
+    }
+    state_ = HEADERS;
+    return true;
 }
 
-HttpConn::~HttpConn()
+bool HttpRequest::ParseHeader_(const string &headers)
 {
-    Close();
+    size_t pos = headers.find(":");
+    if (pos == string::npos)
+    {
+        state_ = BODY;
+        return true;
+    }
+    requestmsg_.request_header.push_back(headers);
+    string key = headers.substr(0, pos);
+    string value = headers.substr(pos + 2);
+    header_kv_[key] = value;
+    return true;
 }
 
-void HttpConn::init(int sockFd, const sockaddr_in &addr)
+bool HttpRequest::ParseBody_(const string &body)
 {
-    assert(sockFd > 0);
+    requestmsg_.request_body = body;
+    if (method_ == "GET")
+    {
+        state_ = FINISH;
+        return true;
+    }
+    else if (method_ == "POST")
+    {
+        if (header_kv_["Content-Type"] == "application/x-www-form-urlencoded")
+        {
+            std::unordered_map<std::string, std::string> form_kv;
+            Utils::ParseFromUrlencoded(requestmsg_.request_body, form_kv);
+            path_ = "/index.html";
+        }
+    }
+    state_ = FINISH;
+    return true;
+}
+
+bool HttpRequest::ParseRequestMsg(Buffer &buff)
+{
+    const char CRLF[] = "\r\n";
+    if (buff.ReadableBytes() <= 0)
+    {
+        return false;
+    }
+    while (buff.ReadableBytes() && state_ != FINISH)
+    {
+        const char *lineEnd = search(buff.ReadPosAddr(), buff.WritePosAddrConst(), CRLF, CRLF + 2);
+        std::string line(buff.ReadPosAddr(), lineEnd);
+        switch (state_)
+        {
+        case REQUEST_LINE:
+            if (!ParseRequestLine_(line))
+            {
+                return false;
+            }
+            Utils::ParsePath(path_);
+            break;
+        case HEADERS:
+            ParseHeader_(line);
+            if (buff.ReadableBytes() <= 2)
+            {
+                state_ = FINISH;
+            }
+            break;
+        case BODY:
+            ParseBody_(line);
+            break;
+        default:
+            break;
+        }
+        if (lineEnd == buff.WritePosAddr()) // buff读完了直接退出解析loop
+        {
+            break;
+        }
+        buff.RetrieveUntil(lineEnd + 2);
+    }
+    LOG_DEBUG("[%s], [%s], [%s]", method_.c_str(), path_.c_str(), version_.c_str());
+    return true;
+}
+
+void HttpResponse::AddResponseLine_()
+{
+    string status;
+    if (code_des.count(code_) == 1)
+    {
+        status = code_des.find(code_)->second;
+    }
+    else
+    {
+        code_ = 400;
+        status = code_des.find(code_)->second;
+    }
+    responsemsg_.response_line = "HTTP/1.1 " + to_string(code_) + " " + status + "\r\n";
+}
+
+void HttpResponse::AddResponseHeader_()
+{
+    responsemsg_.response_header.push_back("Server: carmarfee\r\n");
+    responsemsg_.response_header.push_back("Content-Type: text/html\r\n");
+    if (isKeepAlive_)
+    {
+        responsemsg_.response_header.push_back("Connection: keep-alive\r\n");
+        responsemsg_.response_header.push_back("Keep-Alive: max=6, timeout=120\r\n");
+    }
+    else
+    {
+        responsemsg_.response_header.push_back("Connection: close\r\n");
+    }
+    std::string filetype = Utils::GetFileType(path_);
+    responsemsg_.response_header.push_back("Content-type: " + filetype + "\r\n");
+}
+
+void HttpResponse::AddResponseBody_()
+{
+    int srcFd = open(path_.c_str(), O_RDONLY);
+    if (srcFd < 0)
+    {
+        LOG_ERROR("Open file error");
+        code_ = 404;
+        ErrorContent("Open file error");
+        return;
+    }
+    LOG_DEBUG("file:%s to memory", (srcDir_ + path_).data());
+    int *mmapRet = (int *)mmap(0, file_stat_.st_size, PROT_READ, MAP_PRIVATE, srcFd, 0);
+    if (*mmapRet == -1)
+    {
+        LOG_ERROR("mmap error");
+        code_ = 404;
+        ErrorContent("mmap error");
+        return;
+    }
+    file_content_ = (char *)mmapRet;
+    responsemsg_.response_body = file_content_;
+    close(srcFd);
+    responsemsg_.response_header.push_back("Content-Length: " + to_string(file_stat_.st_size) + "\r\n\r\n");
+}
+
+void HttpResponse::MakeResponseMsg(Buffer &buff)
+{
+    if (stat((srcDir_ + path_).data(), &file_stat_) < 0 || S_ISDIR(file_stat_.st_mode))
+    {
+        code_ = 404;
+    }
+    else if (!(file_stat_.st_mode & S_IROTH))
+    {
+        code_ = 403;
+    }
+    else if (code_ == -1)
+    {
+        code_ = 200;
+    }
+    if (code_path.count(code_) == 1)
+    {
+        path_ = code_path.find(code_)->second;
+        stat((srcDir_ + path_).data(), &file_stat_);
+    }
+    AddResponseLine_();
+    AddResponseHeader_();
+    AddResponseBody_();
+}
+
+void HttpResponse::ErrorContent(string message)
+{
+    string body;
+    string status;
+    body += "<html><title>Error</title>";
+    body += "<body bgcolor=\"ffffff\">";
+    if (code_des.count(code_) == 1)
+    {
+        status = code_des.find(code_)->second;
+    }
+    else
+    {
+        status = code_des.find(400)->second;
+    }
+    body += to_string(code_) + " : " + status + "\n";
+    body += "<p>" + message + "</p>";
+    body += "<hr><em>TinyWebServer</em></body></html>";
+
+    responsemsg_.response_header.push_back("Content-Length: " + to_string(body.size()) + "\r\n\r\n");
+    responsemsg_.response_body = body;
+    ;
+}
+
+void HttpResponse::Close()
+{
+    if (file_content_)
+    {
+        munmap(file_content_, file_stat_.st_size);
+        file_content_ = nullptr;
+    }
+}
+
+const char *HttpConn::srcDir;
+std::atomic<int> HttpConn::userCount;
+
+void HttpConn::Init(int fd, const sockaddr_in &addr)
+{
+    assert(fd > 0);
     userCount++;
     addr_ = addr;
-    fd_ = sockFd;
+    fd_ = fd;
     writeBuff_.RetrieveAll();
     readBuff_.RetrieveAll();
     isClose_ = false;
-    LOG_INFO("Client[%d](%s:%d) in, userCount:%d", fd_, GetIP(), GetPort(), static_cast<int>(userCount));
+    LOG_INFO("Client[%d](%s:%d) in, userCount:%d", fd_, GetIP(), GetPort(), (int)userCount);
 }
 
-int HttpConn::GetFd() const
+ssize_t HttpConn::Read(int *saveErrno)
 {
-    return fd_;
-}
-
-struct sockaddr_in HttpConn::GetAddr() const
-{
-    return addr_;
-}
-
-const char *HttpConn::GetIP() const
-{
-    return inet_ntoa(addr_.sin_addr);
-}
-
-int HttpConn::GetPort() const
-{
-    return addr_.sin_port;
-}
-
-ssize_t HttpConn::read(int *saveErrno)
-{
-    ssize_t len = -1;
-    do
+    int len = -1;
+    while (true)
     {
         len = readBuff_.ReadFd(fd_, saveErrno);
         if (len <= 0)
         {
             break;
         }
-    } while (isET);
+    }
     return len;
 }
 
-ssize_t HttpConn::write(int *saveErrno)
+ssize_t HttpConn::Write(int *saveErrno)
 {
     ssize_t len = -1;
-    do
+    while (true)
     {
         len = writev(fd_, iov_, iovCnt_);
         if (len <= 0)
@@ -85,10 +251,10 @@ ssize_t HttpConn::write(int *saveErrno)
         if (iov_[0].iov_len + iov_[1].iov_len == 0)
         {
             break;
-        }
+        } /* 传输结束 */
         else if (static_cast<size_t>(len) > iov_[0].iov_len)
         {
-            iov_[1].iov_base = static_cast<uint8_t *>(iov_[1].iov_base) + (len - iov_[0].iov_len);
+            iov_[1].iov_base = (uint8_t *)iov_[1].iov_base + (len - iov_[0].iov_len);
             iov_[1].iov_len -= (len - iov_[0].iov_len);
             if (iov_[0].iov_len)
             {
@@ -98,42 +264,57 @@ ssize_t HttpConn::write(int *saveErrno)
         }
         else
         {
-            iov_[0].iov_base = static_cast<uint8_t *>(iov_[0].iov_base) + len;
+            iov_[0].iov_base = (uint8_t *)iov_[0].iov_base + len;
             iov_[0].iov_len -= len;
             writeBuff_.Retrieve(len);
         }
-    } while (isET || ToWriteBytes() > 10240);
+    }
     return len;
 }
 
-bool HttpConn::process()
+bool HttpConn::Process()
 {
     request_.Init();
-    if (readBuff_.ReadableChar() <= 0)
+    if (readBuff_.ReadableBytes() <= 0)
     {
         return false;
     }
-    else if (request_.parse(readBuff_))
+    else if (request_.ParseRequestMsg(readBuff_))
     {
-        LOG_DEBUG("%s", request_.path().c_str());
-        response_.Init(srcDir, request_.path(), request_.IsKeepAlive(), 200);
+        LOG_DEBUG("%s", request_.GetPath().c_str());
+        std::string request_path = request_.GetPath();
+        response_.Init(srcDir, request_path, request_.IsKeepAlive(), 200);
     }
     else
     {
-        response_.Init(srcDir, request_.path(), false, 400);
+        std::string request_path = request_.GetPath();
+        response_.Init(srcDir, request_path, false, 400);
     }
 
-    response_.MakeResponse(writeBuff_);
+    response_.MakeResponseMsg(writeBuff_);
+    /* 响应头 */
     iov_[0].iov_base = const_cast<char *>(writeBuff_.ReadPosAddr());
-    iov_[0].iov_len = writeBuff_.ReadableChar();
+    iov_[0].iov_len = writeBuff_.ReadableBytes();
     iovCnt_ = 1;
 
-    if (response_.FileLen() > 0 && response_.File())
+    /* 文件 */
+    if (response_.GetContentLength() > 0 && response_.GetContent())
     {
-        iov_[1].iov_base = response_.File();
-        iov_[1].iov_len = response_.FileLen();
+        iov_[1].iov_base = response_.GetContent();
+        iov_[1].iov_len = response_.GetContentLength();
         iovCnt_ = 2;
     }
-    LOG_DEBUG("filesize:%d, %d to %d", response_.FileLen(), iovCnt_, ToWriteBytes());
     return true;
+}
+
+void HttpConn::Close()
+{
+    response_.Close();
+    if (isClose_ == false)
+    {
+        isClose_ = true;
+        userCount--;
+        close(fd_);
+        LOG_INFO("Client[%d](%s:%d) quit, UserCount:%d", fd_, GetIP(), GetPort(), (int)userCount);
+    }
 }

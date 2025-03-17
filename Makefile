@@ -2,7 +2,7 @@
 CXX = g++
 
 # 编译选项
-CXXFLAGS = -std=c++11 -Wall -g
+CXXFLAGS = -std=c++14 -Wall -g
 
 # 包含路径
 INCLUDES = -I./inc
@@ -14,20 +14,19 @@ TARGET = server
 SRCS = main.cpp \
 	   src/buffer/buffer.cpp \
 	   src/http/httpconn.cpp \
-	   src/http/httprequest.cpp \
-	   src/http/httpresponse.cpp \
 	   src/log/log.cpp \
 	   src/pool/sqlconnpool.cpp \
 	   src/server/epoller.cpp \
 	   src/server/webserver.cpp \
 	   src/timer/heaptimer.cpp \
+	   src/util/util.cpp	\
 
 # 生成的目标文件
 OBJS = $(SRCS:.cpp=.o)
 
 # 规则：生成目标文件
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^ -pthread -lmysqlclient
 
 # 规则：生成目标文件的依赖文件
 %.o: %.cpp
