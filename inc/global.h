@@ -16,6 +16,9 @@
 #include <unordered_set>
 using namespace std;
 
+/************************************** HTTP  **************************************/
+
+
 const std::unordered_map<std::string, std::string> suffix_des = {
     {".html", "text/html"},
     {".xml", "text/xml"},
@@ -68,5 +71,55 @@ const unordered_set<string> DEFAULT_HTML{
     "/video",
     "/picture",
 };
+
+// 请求报文
+struct RequestMsg
+{
+    // HTTP请求内容
+    std::string request_line;                // 请求行
+    std::vector<std::string> request_header; // 请求报头
+    char blank = '\n';                       // 空行
+    std::string request_body;                // 请求正文
+};
+
+// 响应报文
+struct ResponseMsg
+{
+    // HTTP响应内容
+    std::string response_line;                // 响应行
+    std::vector<std::string> response_header; // 响应报头
+    char blank = '\n';                        // 空行
+    std::string response_body;                // 响应正文
+};
+
+/************************************** FCGI **************************************/
+
+#define FCGI_VERSION_1 1
+#define FCGI_BEGIN_REQUEST 1
+#define FCGI_PARAMS 4
+#define FCGI_STDIN 5
+#define FCGI_RESPONDER 1
+
+
+// 8字节消息头
+struct Fcgiheader
+{
+    /* data */
+    uint8_t version;
+    uint8_t type;
+    uint16_t requestId;
+    uint16_t contentLength;
+    uint8_t paddingLength; // 消息体的长度始终是8字节的整数倍,实际内容长度不足时进行padding
+    uint8_t reserved;
+};
+
+struct FcgiBeginRequest
+{
+    /* data */
+    uint16_t role;
+    uint8_t flags;
+    uint8_t reserved[5];
+};
+
 
 #endif // GLOBAL_H

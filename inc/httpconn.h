@@ -32,26 +32,6 @@
 #include "util.h"
 #include "global.h"
 
-// 请求报文
-struct RequestMsg
-{
-    // HTTP请求内容
-    std::string request_line;                // 请求行
-    std::vector<std::string> request_header; // 请求报头
-    char blank = '\n';                       // 空行
-    std::string request_body;                // 请求正文
-};
-
-// 响应报文
-struct ResponseMsg
-{
-    // HTTP响应内容
-    std::string response_line;                // 响应行
-    std::vector<std::string> response_header; // 响应报头
-    char blank = '\n';                        // 空行
-    std::string response_body;                // 响应正文
-};
-
 class HttpRequest
 {
 public:

@@ -14,17 +14,20 @@
 
 #include <unordered_map>
 #include <string>
+#include <sstream>
+#include <vector>
 
 #include "global.h"
 
 class Utils
 {
 public:
-    static void ParseFromUrlencoded(std::string &data, std::unordered_map<std::string, std::string> &param);
+    static void ParseUrlencoded(std::string &data, std::unordered_map<std::string, std::string> &param);
     static int HexToDec(char ch);
 
     static string GetFileType(const string &path);
-    static void ParsePath(string &path);
+    static string ParsePath(string &path);
+
 };
 
 #endif // UTIL_H__

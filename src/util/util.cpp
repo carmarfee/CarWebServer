@@ -1,7 +1,7 @@
 #include "../../inc/util.h"
 using namespace std;
 
-void Utils::ParseFromUrlencoded(string &data, std::unordered_map<std::string, std::string> &param)
+void Utils::ParseUrlencoded(string &data, std::unordered_map<std::string, std::string> &param)
 {
     if (data.size() == 0)
     {
@@ -78,11 +78,15 @@ string Utils::GetFileType(const string &path)
     return "text/plain";
 }
 
-void Utils::ParsePath(string &path)
+string Utils::ParsePath(string &path)
 {
+    size_t queryStart = path.find('?');
+    // 提取查询字符串部分
+    std::string query = path.substr(queryStart + 1);
+
     if (path == "/")
     {
-        path = "/index.html";
+        path = "index.html";
     }
     else
     {
@@ -95,4 +99,5 @@ void Utils::ParsePath(string &path)
             }
         }
     }
+    return query;
 }

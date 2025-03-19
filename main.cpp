@@ -14,9 +14,6 @@
 
 int main()
 {
-    /* 守护进程 后台运行 */
-    // daemon(1, 0);
-
     WebServer server(
         "127.0.0.1", 1316, false, 60000, 3, /* 端口 ET模式 timeoutMs 优雅退出  */
         3306, "root", "root", "mydb",       /* Mysql配置 */

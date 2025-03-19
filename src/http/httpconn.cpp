@@ -34,8 +34,19 @@ bool HttpRequest::ParseHeader_(const string &headers)
 bool HttpRequest::ParseBody_(const string &body)
 {
     requestmsg_.request_body = body;
+    query_string_ = Utils::ParsePath(path_);
     if (method_ == "GET")
     {
+        if (cgi_)
+        {
+            std::unordered_map<std::string, std::string> query_kv;
+            Utils::ParseUrlencoded(query_string_, query_kv);
+        }
+        else
+        {
+            state_ = FINISH;
+            return true;
+        }
         state_ = FINISH;
         return true;
     }
@@ -44,8 +55,7 @@ bool HttpRequest::ParseBody_(const string &body)
         if (header_kv_["Content-Type"] == "application/x-www-form-urlencoded")
         {
             std::unordered_map<std::string, std::string> form_kv;
-            Utils::ParseFromUrlencoded(requestmsg_.request_body, form_kv);
-            path_ = "/index.html";
+            Utils::ParseUrlencoded(requestmsg_.request_body, form_kv);
         }
     }
     state_ = FINISH;
@@ -70,12 +80,12 @@ bool HttpRequest::ParseRequestMsg(Buffer &buff)
             {
                 return false;
             }
-            Utils::ParsePath(path_);
             break;
         case HEADERS:
             ParseHeader_(line);
-            if (buff.ReadableBytes() <= 2)
+            if (buff.ReadableBytes() <= 2) // 读到最后的/r/n,而不是/r/n/r/n，说明后面没有body
             {
+                Utils::ParsePath(path_);
                 state_ = FINISH;
             }
             break;
@@ -135,7 +145,7 @@ void HttpResponse::AddResponseHeader_(Buffer &buff)
 
 void HttpResponse::AddResponseBody_(Buffer &buff)
 {
-    int srcFd = open(path_.c_str(), O_RDONLY);
+    int srcFd = open((srcDir_ + path_).c_str(), O_RDONLY);
     if (srcFd < 0)
     {
         LOG_ERROR("Open file error");
@@ -144,7 +154,6 @@ void HttpResponse::AddResponseBody_(Buffer &buff)
         buff.Append(responsemsg_.response_header.back());
         return;
     }
-    LOG_DEBUG("file:%s to memory", (srcDir_ + path_).data());
     int *mmapRet = (int *)mmap(0, file_stat_.st_size, PROT_READ, MAP_PRIVATE, srcFd, 0);
     if (*mmapRet == -1)
     {
