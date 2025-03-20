@@ -20,6 +20,7 @@ SRCS = main.cpp \
 	   src/server/webserver.cpp \
 	   src/timer/heaptimer.cpp \
 	   src/util/util.cpp	\
+	   src/fast
 
 # 生成的目标文件
 OBJS = $(SRCS:.cpp=.o)
