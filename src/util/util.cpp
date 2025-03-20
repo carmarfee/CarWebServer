@@ -78,15 +78,19 @@ string Utils::GetFileType(const string &path)
     return "text/plain";
 }
 
-string Utils::ParsePath(string &path)
+string Utils::GetQuery(string &path)
 {
     size_t queryStart = path.find('?');
-    // 提取查询字符串部分
     std::string query = path.substr(queryStart + 1);
+    return query;
+}
 
+bool Utils::ParsePath(string &path)
+{
     if (path == "/")
     {
         path = "index.html";
+        return false;
     }
     else
     {
@@ -95,9 +99,9 @@ string Utils::ParsePath(string &path)
             if (item == path)
             {
                 path += ".html";
-                break;
+                return false;
             }
         }
     }
-    return query;
+    return true;
 }

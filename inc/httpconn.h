@@ -31,6 +31,7 @@
 #include "buffer.h"
 #include "util.h"
 #include "global.h"
+#include "fastcgi.h"
 
 class HttpRequest
 {
@@ -54,9 +55,9 @@ public:
         query_string_ = "";
         cgi_ = false;
     };
-    std::string GetMethod() const { return method_; }
-    std::string GetPath() const { return path_; }
-    std::string GetVersion() const { return version_; }
+    std::string GetMethod() const { return method_; };
+    std::string GetPath() const { return path_; };
+    std::string GetVersion() const { return version_; };
 
     bool ParseRequestMsg(Buffer &buff);
 
@@ -68,14 +69,14 @@ public:
             return header_kv_.find("Connection")->second == "keep-alive";
         }
         return false;
-    }
+    };
 
 private:
     bool ParseRequestLine_(const std::string &line);
     bool ParseHeader_(const std::string &headers);
     bool ParseBody_(const std::string &body);
 
-private:
+public:
     RequestMsg requestmsg_; // 存放请求报文
     // 解析的结果
     std::string method_;                                     // 请求方法
@@ -87,6 +88,7 @@ private:
 
     bool cgi_; // 是否启用cgi
 
+private:
     PARSE_STATE state_;
 };
 
@@ -172,6 +174,8 @@ public:
     ssize_t Write(int *Errno);
 
     int GetFd() const { return fd_; };
+    int GetCgiFd() { return cgiserver_.GetFd(); };
+    int IsCgi() { return request_.cgi_; };
     int GetPort() const { return addr_.sin_port; };
     const char *GetIP() const { return inet_ntoa(addr_.sin_addr); }
     sockaddr_in GetAddr() const { return addr_; };
@@ -192,6 +196,9 @@ public:
 
 private:
     int fd_;
+
+    Fastcgi cgiserver_;
+
     struct sockaddr_in addr_;
     bool isClose_;
 
@@ -203,6 +210,8 @@ private:
 
     HttpRequest request_;
     HttpResponse response_;
+
+    Fastcgi fcgi_;
 };
 
 #endif // HTTPCONN_H

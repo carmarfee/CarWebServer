@@ -34,31 +34,12 @@ bool HttpRequest::ParseHeader_(const string &headers)
 bool HttpRequest::ParseBody_(const string &body)
 {
     requestmsg_.request_body = body;
-    query_string_ = Utils::ParsePath(path_);
-    if (method_ == "GET")
+    query_string_ = Utils::GetQuery(path_);
+    cgi_ = Utils::ParsePath(path_);
+    if (cgi_)
     {
-        if (cgi_)
-        {
-            std::unordered_map<std::string, std::string> query_kv;
-            Utils::ParseUrlencoded(query_string_, query_kv);
-        }
-        else
-        {
-            state_ = FINISH;
-            return true;
-        }
-        state_ = FINISH;
-        return true;
     }
-    else if (method_ == "POST")
-    {
-        if (header_kv_["Content-Type"] == "application/x-www-form-urlencoded")
-        {
-            std::unordered_map<std::string, std::string> form_kv;
-            Utils::ParseUrlencoded(requestmsg_.request_body, form_kv);
-        }
-    }
-    state_ = FINISH;
+    state_ = FINISH; // 如果不是cgi请求，则返回请求的html页面
     return true;
 }
 
@@ -298,7 +279,6 @@ bool HttpConn::Process()
     }
     else if (request_.ParseRequestMsg(readBuff_))
     {
-        LOG_DEBUG("%s", request_.GetPath().c_str());
         std::string request_path = request_.GetPath();
         response_.Init(srcDir, request_path, request_.IsKeepAlive(), 200);
     }
@@ -309,25 +289,40 @@ bool HttpConn::Process()
     }
 
     response_.MakeResponseMsg(writeBuff_);
-    /* 响应头 */
-    iov_[0].iov_base = const_cast<char *>(writeBuff_.ReadPosAddr());
-    iov_[0].iov_len = writeBuff_.ReadableBytes();
-    iovCnt_ = 1;
-
-    /* 响应体 */
-    if (response_.GetContent())
+    if (IsCgi())
     {
-        if (response_.GetContentLength(1) > 0)
+        Buffer buff;
+        cgiserver_.ConnectFcgiServer();
+        cgiserver_.MakeFcgiRequest(request_);
+        cgiserver_.SendFcgiRequset();
+        cgiserver_.ReadandParseFcgiResponse(buff);
+
+        /* 响应头+响应体 */
+        iov_[0].iov_base = const_cast<char *>(buff.ReadPosAddr());
+        iov_[0].iov_len = buff.ReadableBytes();
+        iovCnt_ = 1;
+    }
+    else
+    {
+        /* 响应头 */
+        iov_[0].iov_base = const_cast<char *>(writeBuff_.ReadPosAddr());
+        iov_[0].iov_len = writeBuff_.ReadableBytes();
+        iovCnt_ = 1;
+        /* 响应体 from plain or html*/
+        if (response_.GetContent())
         {
-            iov_[1].iov_base = response_.GetContent(1);
-            iov_[1].iov_len = response_.GetContentLength(1);
-            iovCnt_ = 2;
-        }
-        else if (response_.GetContentLength(0) > 0)
-        {
-            iov_[1].iov_base = response_.GetContent(0);
-            iov_[1].iov_len = response_.GetContentLength(0);
-            iovCnt_ = 2;
+            if (response_.GetContentLength(1) > 0)
+            {
+                iov_[1].iov_base = response_.GetContent(1);
+                iov_[1].iov_len = response_.GetContentLength(1);
+                iovCnt_ = 2;
+            }
+            else if (response_.GetContentLength(0) > 0)
+            {
+                iov_[1].iov_base = response_.GetContent(0);
+                iov_[1].iov_len = response_.GetContentLength(0);
+                iovCnt_ = 2;
+            }
         }
     }
     return true;

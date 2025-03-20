@@ -15,9 +15,48 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <vector>
+#include <unordered_map>
+
+#include "buffer.h"
+#include "global.h"
+#include "log.h"
+#include "httpconn.h"
+
+using namespace std;
 
 class Fastcgi
 {
 public:
-    void MakeFcgiheader()
-}
+    Fastcgi()
+    {
+        iovCnt_ = 0;
+        sockFd_ = -1;
+    };
+    ~Fastcgi()
+    {
+        if (sockFd_ > 0)
+            close(sockFd_);
+    };
+
+    int GetFd() { return sockFd_; };
+
+    void ConnectFcgiServer();
+    void MakeFcgiRequest(HttpRequest req);
+    int SendFcgiRequset();
+    int ReadandParseFcgiResponse(Buffer &buff);
+
+private:
+    void BuildFcgiHeader_(Fcgiheader &header, uint8_t type, uint16_t requestId, uint16_t contentLength);
+    void BuildFcgiBody_(FcgiBeginRequestBody &body);
+    void BuildFcgiParams_(vector<uint8_t> &paramsbuffer);
+    vector<uint8_t> encodeFastCgiParams(const std::unordered_map<std::string, std::string> &params);
+
+private:
+    Buffer writebuff_; //
+    Buffer readbuff_;
+
+    int iovCnt_;
+    struct iovec iov_[2];
+
+    int sockFd_;
+};

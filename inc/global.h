@@ -18,7 +18,6 @@ using namespace std;
 
 /************************************** HTTP  **************************************/
 
-
 const std::unordered_map<std::string, std::string> suffix_des = {
     {".html", "text/html"},
     {".xml", "text/xml"},
@@ -95,11 +94,28 @@ struct ResponseMsg
 /************************************** FCGI **************************************/
 
 #define FCGI_VERSION_1 1
-#define FCGI_BEGIN_REQUEST 1
-#define FCGI_PARAMS 4
-#define FCGI_STDIN 5
-#define FCGI_RESPONDER 1
 
+enum FCGI_TYPE
+{
+    FCGI_BEGIN_REQUEST = 1, //(web->fastcgi)请求开始数据包
+    FCGI_ABORT_REQUEST,     //(web->fastcgi)终止请求
+    FCGI_END_REQUEST,       //(fastcgi->web)请求结束
+    FCGI_PARAMS,            //(web->fastcgi)传递参数
+    FCGI_STDIN,             //(web->fastcgi)数据流传输数据
+    FCGI_STDOUT,            //(fastcgi->web)数据流传输数据
+    FCGI_STDERR,            //(fastcgi->web)数据流传输
+    FCGI_DATA,              //(web->fastcgi)数据流传输
+    FCGI_GET_VALUES,        //(web->fastcgi)查询fastcgi服务器性能参数
+    FCGI_GET_VALUES_RESULT, //(fastcgi->web)fastcgi性能参数查询返回
+    FCGI_UNKNOWN_TYPE
+};
+
+enum FCGI_ROLE
+{
+    FCGI_RESPONDER = 1,
+    FCGI_AUTHORIZER,
+    FCGI_FILTER
+};
 
 // 8字节消息头
 struct Fcgiheader
@@ -113,13 +129,12 @@ struct Fcgiheader
     uint8_t reserved;
 };
 
-struct FcgiBeginRequest
+struct FcgiBeginRequestBody
 {
     /* data */
     uint16_t role;
     uint8_t flags;
     uint8_t reserved[5];
 };
-
 
 #endif // GLOBAL_H

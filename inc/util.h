@@ -26,8 +26,8 @@ public:
     static int HexToDec(char ch);
 
     static string GetFileType(const string &path);
-    static string ParsePath(string &path);
-
+    static bool ParsePath(string &path);
+    static string GetQuery(string &path);
 };
 
 #endif // UTIL_H__
