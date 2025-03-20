@@ -14,6 +14,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <cstdint>
 using namespace std;
 
 /************************************** HTTP  **************************************/

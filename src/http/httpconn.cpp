@@ -36,9 +36,6 @@ bool HttpRequest::ParseBody_(const string &body)
     requestmsg_.request_body = body;
     query_string_ = Utils::GetQuery(path_);
     cgi_ = Utils::ParsePath(path_);
-    if (cgi_)
-    {
-    }
     state_ = FINISH; // 如果不是cgi请求，则返回请求的html页面
     return true;
 }
@@ -153,6 +150,7 @@ void HttpResponse::AddResponseBody_(Buffer &buff)
 
 void HttpResponse::MakeResponseMsg(Buffer &buff)
 {
+    LOG_DEBUG("filepath:%s", (srcDir_ + path_).c_str());
     if (stat((srcDir_ + path_).data(), &file_stat_) < 0 || S_ISDIR(file_stat_.st_mode))
     {
         code_ = 404;
@@ -293,7 +291,7 @@ bool HttpConn::Process()
     {
         Buffer buff;
         cgiserver_.ConnectFcgiServer();
-        cgiserver_.MakeFcgiRequest(request_);
+        cgiserver_.MakeFcgiRequest();
         cgiserver_.SendFcgiRequset();
         cgiserver_.ReadandParseFcgiResponse(buff);
 

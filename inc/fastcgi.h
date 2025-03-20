@@ -9,6 +9,9 @@
  *
  */
 
+#ifndef FASTCGI_H
+#define FASTCGI_H
+
 #include <iostream>
 #include <cstring>
 #include <arpa/inet.h>
@@ -20,7 +23,6 @@
 #include "buffer.h"
 #include "global.h"
 #include "log.h"
-#include "httpconn.h"
 
 using namespace std;
 
@@ -41,7 +43,7 @@ public:
     int GetFd() { return sockFd_; };
 
     void ConnectFcgiServer();
-    void MakeFcgiRequest(HttpRequest req);
+    void MakeFcgiRequest();
     int SendFcgiRequset();
     int ReadandParseFcgiResponse(Buffer &buff);
 
@@ -52,7 +54,7 @@ private:
     vector<uint8_t> encodeFastCgiParams(const std::unordered_map<std::string, std::string> &params);
 
 private:
-    Buffer writebuff_; //
+    Buffer writebuff_; 
     Buffer readbuff_;
 
     int iovCnt_;
@@ -60,3 +62,5 @@ private:
 
     int sockFd_;
 };
+
+#endif // FASTCGI_H

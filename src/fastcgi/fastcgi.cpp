@@ -49,7 +49,7 @@ void Fastcgi::BuildFcgiParams_(vector<uint8_t> &paramsbuffer)
     writebuff_.Append(paramsbuffer.data(), paramsbuffer.size());
 }
 
-void Fastcgi::MakeFcgiRequest(HttpRequest req)
+void Fastcgi::MakeFcgiRequest()
 {
     Fcgiheader header;
     FcgiBeginRequestBody body;

@@ -82,6 +82,7 @@ string Utils::GetQuery(string &path)
 {
     size_t queryStart = path.find('?');
     std::string query = path.substr(queryStart + 1);
+    path = path.substr(0, queryStart);
     return query;
 }
 
@@ -89,7 +90,7 @@ bool Utils::ParsePath(string &path)
 {
     if (path == "/")
     {
-        path = "index.html";
+        path = "login.html";
         return false;
     }
     else
