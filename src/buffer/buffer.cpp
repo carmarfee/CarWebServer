@@ -158,6 +158,12 @@ std::string Buffer::RetrieveAllToStr()
     return str;
 }
 
+void Buffer::Dropbytes(size_t len)
+{
+    assert(ReadableBytes() >= len);
+    writePos_ -= len;;
+}
+
 char *Buffer::BeginPtr_()
 {
     return &*buffer_.begin();

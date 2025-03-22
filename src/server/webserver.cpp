@@ -14,7 +14,6 @@ using namespace std;
 
 WebServer::WebServer(
     const char *ip, int port, bool openlinger, int timeoutMS, int trigMode,
-    int sqlport, const char *sqluser, const char *sqlpwd, const char *dbname,
     int connPoolNum, int threadNum, bool openlog, int loglevel, int logQueSize)
     : ip_(ip), port_(port), openlinger_(openlinger), timeoutMS_(timeoutMS), trigMode_(trigMode), listenFd_(-1), epoller_(new Epoller()), timer_(new heaptimer()), threadpool_(new threadpool(threadNum))
 {
@@ -23,7 +22,6 @@ WebServer::WebServer(
     strncat(srcDir_, "/res/", 10);
     HttpConn::userCount = 0;
     HttpConn::srcDir = srcDir_;
-    SqlConnPool::GetInstance()->init("localhost", sqlport, sqluser, sqlpwd, dbname, connPoolNum);
     InitEventMode_(trigMode);
     if (!InitSocket_())
     {
@@ -65,7 +63,6 @@ WebServer::~WebServer()
     close(listenFd_);
     isClose_ = true;
     free(srcDir_);
-    SqlConnPool::GetInstance()->close();
 }
 
 void WebServer::Start()

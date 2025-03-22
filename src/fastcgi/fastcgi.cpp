@@ -16,9 +16,8 @@ void Fastcgi::ConnectFcgiServer()
     sockFd_ = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in serverAddr;
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(9000);
+    serverAddr.sin_port = htons(10000);
     inet_pton(AF_INET, "127.0.0.1", &serverAddr.sin_addr); // 连接php-fpm服务器
-
     if (connect(sockFd_, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
     {
         LOG_ERROR("连接PHP-FPM失败");
@@ -49,20 +48,31 @@ void Fastcgi::BuildFcgiParams_(vector<uint8_t> &paramsbuffer)
     writebuff_.Append(paramsbuffer.data(), paramsbuffer.size());
 }
 
-void Fastcgi::MakeFcgiRequest()
+void Fastcgi::MakeFcgiRequest(string srcDir, string querystring, string method, string cgipath)
 {
     Fcgiheader header;
     FcgiBeginRequestBody body;
     BuildFcgiHeader_(header, FCGI_BEGIN_REQUEST, 1, sizeof(header));
     BuildFcgiBody_(body);
-    vector<uint8_t> paramsbuffer = encodeFastCgiParams({{"SERVER_ADDR", "192.168.1.10"},
-                                                        {"SERVER_NAME", "example.com"},
-                                                        {"REQUEST_METHOD", "GET"},
-                                                        {"SCRIPT_FILENAME", "/var/www/html/login.php"},
-                                                        {"SCRIPT_NAME", "/login.php"},
-                                                        {"REQUEST_URI", "/login.php"},
-                                                        {"QUERY_STRING", ""},
-                                                        {"SERVER_PROTOCOL", "HTTP/1.1"}});
+
+    size_t pos = cgipath.find('/');
+    string cginame = cgipath.substr(pos + 1);
+
+    vector<uint8_t> paramsbuffer = encodeFastCgiParams({{"SCRIPT_FILENAME", srcDir + "../backend" + cgipath},
+                                                        {"QUERY_STRING", querystring},
+                                                        {"REQUEST_METHOD", method},
+                                                        {"SCRIPT_NAME", cginame},
+                                                        {"REQUEST_URI", "/backend" + cgipath + "?" + querystring},
+                                                        {"DOCUMENT_ROOT", "/home/carmarfee/C++pro/CarWebServer/res"},
+                                                        {"SERVER_PROTOCOL", "HTTP/1.1"},
+                                                        {"GATEWAY_INTERFACE", "CGI/1.1"},
+                                                        {"SERVER_SOFTWARE", "MyFastCGI/1.0"},
+                                                        {"REMOTE_ADDR", "127.0.0.1"},
+                                                        {"REMOTE_PORT", "56789"},
+                                                        {"SERVER_ADDR", "127.0.0.1"},
+                                                        {"SERVER_PORT", "10000"},
+                                                        {"CONTENT_LENGTH", "0"},
+                                                        {"CONTENT_TYPE", ""}});
     BuildFcgiHeader_(header, FCGI_PARAMS, 1, paramsbuffer.size());
     BuildFcgiParams_(paramsbuffer);
 
@@ -89,26 +99,29 @@ int Fastcgi::SendFcgiRequset()
     return len;
 }
 
-int Fastcgi::ReadandParseFcgiResponse(Buffer &buff)
+void Fastcgi::ReadandParseFcgiResponse(Buffer &buff)
 {
     ssize_t len = -1;
     int *readerror = 0;
     Fcgiheader *beginheader;
+    bool isgetheader = false;
     int contentlength = 0;
     while (true)
     {
-        len = buff.ReadFd(sockFd_, readerror);
+        len = readbuff_.ReadFd(sockFd_, readerror);
         if (len <= 0)
             break;
-        if (buff.ReadableBytes() == 8)
+        if (readbuff_.ReadableBytes() >= 8 && !isgetheader)
         {
-            beginheader = (Fcgiheader *)buff.ReadPosAddr();
-            contentlength = beginheader->contentLength;
+            isgetheader = true;
+            beginheader = (Fcgiheader *)readbuff_.ReadPosAddr();
+            contentlength = ntohs(beginheader->contentLength);
         }
-        if (contentlength != 0 && buff.ReadableBytes() >= 8 + contentlength)
+        if (contentlength != 0 && readbuff_.ReadableBytes() >= 8 + contentlength)
             break;
     }
-    buff.Retrieve(8);
+    buff.Append(readbuff_.ReadPosAddr() + sizeof(beginheader), contentlength);
+    close(sockFd_);
 }
 
 std::vector<uint8_t> Fastcgi::encodeFastCgiParams(const std::unordered_map<std::string, std::string> &params)

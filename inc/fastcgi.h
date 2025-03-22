@@ -43,9 +43,9 @@ public:
     int GetFd() { return sockFd_; };
 
     void ConnectFcgiServer();
-    void MakeFcgiRequest();
+    void MakeFcgiRequest(string srcDir, string querystring, string method, string cgipath);
     int SendFcgiRequset();
-    int ReadandParseFcgiResponse(Buffer &buff);
+    void ReadandParseFcgiResponse(Buffer &buff);
 
 private:
     void BuildFcgiHeader_(Fcgiheader &header, uint8_t type, uint16_t requestId, uint16_t contentLength);
@@ -54,7 +54,7 @@ private:
     vector<uint8_t> encodeFastCgiParams(const std::unordered_map<std::string, std::string> &params);
 
 private:
-    Buffer writebuff_; 
+    Buffer writebuff_;
     Buffer readbuff_;
 
     int iovCnt_;

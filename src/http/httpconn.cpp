@@ -63,7 +63,8 @@ bool HttpRequest::ParseRequestMsg(Buffer &buff)
             ParseHeader_(line);
             if (buff.ReadableBytes() <= 2) // 读到最后的/r/n,而不是/r/n/r/n，说明后面没有body
             {
-                Utils::ParsePath(path_);
+                query_string_ = Utils::GetQuery(path_);
+                cgi_ = Utils::ParsePath(path_);
                 state_ = FINISH;
             }
             break;
@@ -101,7 +102,6 @@ void HttpResponse::AddResponseLine_(Buffer &buff)
 
 void HttpResponse::AddResponseHeader_(Buffer &buff)
 {
-    responsemsg_.response_header.push_back("Content-Type: text/html\r\n");
     if (isKeepAlive_)
     {
         responsemsg_.response_header.push_back("Connection: keep-alive\r\n");
@@ -114,7 +114,6 @@ void HttpResponse::AddResponseHeader_(Buffer &buff)
     std::string filetype = Utils::GetFileType(path_);
     responsemsg_.response_header.push_back("Content-type: " + filetype + "\r\n");
 
-    buff.Append("Content-Type: text/html\r\n");
     buff.Append("Connection: keep-alive\r\n");
     buff.Append("Keep-Alive: max=6, timeout=120\r\n");
     buff.Append("Connection: close\r\n");
@@ -138,14 +137,11 @@ void HttpResponse::AddResponseBody_(Buffer &buff)
         LOG_ERROR("mmap error");
         code_ = 404;
         ErrorContent("mmap error");
-        buff.Append(responsemsg_.response_header.back());
         return;
     }
     file_content_ = (char *)mmapRet;
     responsemsg_.response_body = file_content_;
     close(srcFd);
-    responsemsg_.response_header.push_back("Content-Length: " + to_string(file_stat_.st_size) + "\r\n\r\n");
-    buff.Append("Content-Length: " + to_string(file_stat_.st_size) + "\r\n\r\n");
 }
 
 void HttpResponse::MakeResponseMsg(Buffer &buff)
@@ -191,7 +187,6 @@ void HttpResponse::ErrorContent(string message)
     body += "<p>" + message + "</p>";
     body += "<hr><em>TinyWebServer</em></body></html>";
 
-    responsemsg_.response_header.push_back("Content-Length: " + to_string(body.size()) + "\r\n\r\n");
     responsemsg_.response_body = body;
 }
 
@@ -289,15 +284,14 @@ bool HttpConn::Process()
     response_.MakeResponseMsg(writeBuff_);
     if (IsCgi())
     {
-        Buffer buff;
         cgiserver_.ConnectFcgiServer();
-        cgiserver_.MakeFcgiRequest();
+        cgiserver_.MakeFcgiRequest(srcDir, request_.query_string_, request_.GetMethod(), request_.GetPath());
         cgiserver_.SendFcgiRequset();
-        cgiserver_.ReadandParseFcgiResponse(buff);
+        cgiserver_.ReadandParseFcgiResponse(writeBuff_);
 
         /* 响应头+响应体 */
-        iov_[0].iov_base = const_cast<char *>(buff.ReadPosAddr());
-        iov_[0].iov_len = buff.ReadableBytes();
+        iov_[0].iov_base = const_cast<char *>(writeBuff_.ReadPosAddr());
+        iov_[0].iov_len = writeBuff_.ReadableBytes();
         iovCnt_ = 1;
     }
     else
@@ -309,16 +303,24 @@ bool HttpConn::Process()
         /* 响应体 from plain or html*/
         if (response_.GetContent())
         {
-            if (response_.GetContentLength(1) > 0)
+            if (response_.GetContentLength(1) > 0) // html file
             {
                 iov_[1].iov_base = response_.GetContent(1);
                 iov_[1].iov_len = response_.GetContentLength(1);
+
+                /* 添加content_length */
+                writeBuff_.Append("Content-Length: " + to_string(iov_[1].iov_len) + "\r\n\r\n");
+
                 iovCnt_ = 2;
             }
-            else if (response_.GetContentLength(0) > 0)
+            else if (response_.GetContentLength(0) > 0) // plain content
             {
                 iov_[1].iov_base = response_.GetContent(0);
                 iov_[1].iov_len = response_.GetContentLength(0);
+
+                /* 添加content_length */
+                writeBuff_.Append("Content-Length: " + to_string(iov_[1].iov_len) + "\r\n\r\n");
+
                 iovCnt_ = 2;
             }
         }

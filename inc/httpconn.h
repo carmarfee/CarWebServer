@@ -180,6 +180,8 @@ public:
     const char *GetIP() const { return inet_ntoa(addr_.sin_addr); }
     sockaddr_in GetAddr() const { return addr_; };
 
+    string GetQueryString() { return request_.query_string_; };
+
     int ToWriteBytes()
     {
         return iov_[0].iov_len + iov_[1].iov_len;

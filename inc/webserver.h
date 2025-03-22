@@ -25,8 +25,6 @@
 #include "log.h"
 #include "heaptimer.h"
 #include "threadpool.h"
-#include "sqlconnpool.h"
-#include "sqlconn.h"
 #include "httpconn.h"
 
 class WebServer
@@ -34,7 +32,6 @@ class WebServer
 public:
     WebServer(
         const char *ip, int port, bool openlinger, int timeoutMS, int trigMode,
-        int sqlport, const char *sqluser, const char *sqlpwd, const char *dbname,
         int connPoolNum, int threadNum, bool openlog, int loglevel, int logQueSize);
     ~WebServer();
 

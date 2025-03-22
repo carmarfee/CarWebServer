@@ -47,16 +47,18 @@ public:
     void Append(const Buffer &buff);
 
     void Retrieve(size_t len);
-    void RetrieveUntil(const char* end);
+    void RetrieveUntil(const char *end);
 
     void RetrieveAll();
     std::string RetrieveAllToStr();
 
+    void Dropbytes(size_t len);
     void ResetBuffer(size_t len); // 如果buffer写不下从fd中读取的char,则追加extrabuff
 
 private:
     char *BeginPtr_();
-    const char* BeginPtr_() const;
+    const char *BeginPtr_() const;
+
 private:
     std::vector<char> buffer_;
     std::atomic<std::size_t> readPos_;
